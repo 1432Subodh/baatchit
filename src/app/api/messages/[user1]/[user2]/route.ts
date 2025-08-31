@@ -5,19 +5,26 @@ import { Message } from "../../../../../../model/message";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ user1: string; user2: string }> }
+  { params }: { params: { user1: string; user2: string } } // Do NOT make this a Promise
 ) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  // `params` is a promise in Next.js 15, so you must await it
-  const { user1, user2 } = await context.params;
+    const { user1, user2 } = params;
 
-  const messages = await Message.find({
-    $or: [
-      { from: user1, to: user2 },
-      { from: user2, to: user1 },
-    ],
-  }).sort({ time: 1 });
+    const messages = await Message.find({
+      $or: [
+        { from: user1, to: user2 },
+        { from: user2, to: user1 },
+      ],
+    }).sort({ time: 1 });
 
-  return NextResponse.json(messages);
+    return NextResponse.json(messages);
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch messages" },
+      { status: 500 }
+    );
+  }
 }
