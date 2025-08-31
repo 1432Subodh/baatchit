@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Circle, LucideCircleDashed, MessageSquare, MessageSquareDashedIcon, Phone, Users, Users2 } from "lucide-react"
+import { LucideCircleDashed, MessageSquare, MessageSquareDashedIcon, Phone, Users2 } from "lucide-react"
 
 import {
   Sidebar,
@@ -10,14 +10,12 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
-  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
 import { NavUser } from "./nav-user"
-import { Input } from "../ui/input"
 import ChatSearchInput from "../search-chat/ChatSearch"
 
 // Example data for sidebar

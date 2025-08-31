@@ -1,33 +1,37 @@
 // lib/connect.ts
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+const MONGODB_URI: string | undefined = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error("⚠️ Please define the MONGODB_URI environment variable in .env.local");
 }
 
-let cached = (global as any).mongoose;
-
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+interface MongooseCache {
+  conn: Mongoose | null;
+  promise: Promise<Mongoose> | null;
 }
 
-async function connectDB() {
+declare global {
+  var mongoose: MongooseCache | undefined; // allow global `mongoose` across hot reloads
+}
+
+const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+
+async function connectDB(): Promise<Mongoose> {
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose
-      .connect(MONGODB_URI, {
-        dbName: "chat_app", // optional: specify your db name
-        bufferCommands: false,
-      })
-      .then((mongoose) => mongoose);
+    cached.promise = mongoose.connect(MONGODB_URI!, {
+      dbName: "chat_app", // optional: specify your db name
+      bufferCommands: false,
+    });
   }
 
   cached.conn = await cached.promise;
+  global.mongoose = cached; // ensure it's cached globally
   return cached.conn;
 }
 

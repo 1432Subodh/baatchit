@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectDB from "../../../../../lib/connect";
 import { Message } from "../../../../../model/message";
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     await connectDB();
     const { msgId, status } = await req.json();
@@ -13,7 +13,11 @@ export async function PATCH(req: Request) {
     );
 
     return NextResponse.json(updated);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    let message = "An unknown error occurred";
+    if (err instanceof Error) {
+      message = err.message;
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

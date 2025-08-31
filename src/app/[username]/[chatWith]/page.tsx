@@ -11,6 +11,13 @@ import { useState, useRef, useEffect } from "react";
 import { useChat } from "../../../../logic/useChat";
 import { getDateLabel } from "../../../../utils/dateLabel";
 import { motion, AnimatePresence } from "framer-motion";
+import { Message } from "../../../../interface/message";
+
+// Message type (adapt as needed from your useChat logic/interface)
+
+
+// Grouped chat type
+type GroupedChat = Record<string, Message[]>;
 
 export default function Page() {
   const params = useParams() as { username: string; chatWith: string };
@@ -37,7 +44,7 @@ export default function Page() {
   }, [chat]);
 
   // group messages by date
-  const groupedChat = chat.reduce((acc: any, msg) => {
+  const groupedChat: GroupedChat = chat.reduce<GroupedChat>((acc, msg) => {
     const dateLabel = getDateLabel(msg.rawTime || "");
     if (!acc[dateLabel]) acc[dateLabel] = [];
     acc[dateLabel].push(msg);
@@ -83,7 +90,7 @@ export default function Page() {
                 {/* Messages under this date */}
                 <div className="flex flex-col gap-1 mt-6">
                   <AnimatePresence>
-                    {groupedChat[date].map((msg: any) => (
+                    {groupedChat[date].map((msg) => (
                       <motion.div
                         key={msg.id}
                         initial={{ opacity: 0, y: 10 }}

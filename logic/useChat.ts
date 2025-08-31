@@ -26,7 +26,7 @@ export function useChat(username: string, chatWith: string) {
   useEffect(() => {
     if (!username) return;
 
-    const newSocket: Socket = io("http://localhost:4000", {
+    const newSocket: Socket = io("https://baatchitserver.onrender.com/", {
       transports: ["websocket"],
     });
 
