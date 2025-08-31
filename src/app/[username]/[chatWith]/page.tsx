@@ -1,48 +1,32 @@
+"use client";
 import { AppSidebar } from "@/components/sidebar/sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  Video,
-  Phone,
-  Smile,
-  Paperclip,
-  Mic,
-  MoreVertical
-} from "lucide-react"
-import { ModeToggle } from "../../theme-provider/theme-btn"
-import MainAvatar from "@/components/avatar/mainavatar"
 import Incoming from "@/components/chat-message/incoming"
-import { Message } from "../../interface/message"
 import Outgoing from "@/components/chat-message/outgoing"
 import ChatHeader from "@/components/sidebar/chat-header"
 import ChatFooter from "@/components/sidebar/chat-footer"
-
+import { useParams } from "next/navigation"
+import { useState } from "react"
+import { useChat } from "../../../../logic/useChat";
 export default function Page() {
+  const params = useParams() as { username: string; chatWith: string };
+  const { username, chatWith } = params;
 
-  const messages: Message[] = [
-    {
-      src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80",
-      alt: "Amit Sharma",
-      fallback: "AS",
-      message: "Hey, are we meeting today?",
-      time: "10:43 AM",
-      status: "Read",
-      type: "incoming",
-    },
-    {
-      src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80",
-      alt: "You",
-      fallback: "Y",
-      message: "Yes, at 5 PM. 👍",
-      time: "10:43 AM",
-      status: "Read",
-      type: "outgoing",
-    },
-  ]
+  const { chat, sendMessage } = useChat(username, chatWith);
+  const [message, setMessage] = useState("");
+
+  const handleSend = () => {
+    if (message.trim() !== "") {
+      sendMessage(message);
+      setMessage("");
+    }
+
+  };
+
+  console.log("Chat messages:", chat);
+
+
   return (
     <SidebarProvider style={{ "--sidebar-width": "390px" } as React.CSSProperties}>
       {/* Left Sidebar (chat list) */}
@@ -62,20 +46,21 @@ export default function Page() {
             </Badge>
           </div>
 
-          {/* Incoming message */}
-
-          {messages.map((msg, index) =>
+          {chat.map((msg, index) =>
             msg.type === "incoming" ? (
               <Incoming key={index} {...msg} />
             ) : (
               <Outgoing key={index} {...msg} />
             )
           )}
-
-
         </div>
 
-        <ChatFooter />
+        {/* Footer with input */}
+        <ChatFooter
+          message={message}
+          setMessage={setMessage}
+          handleSend={handleSend}
+        />
       </SidebarInset>
     </SidebarProvider>
   )
