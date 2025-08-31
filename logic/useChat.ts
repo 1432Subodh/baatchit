@@ -9,15 +9,20 @@ export interface Message {
   alt: string;
   fallback: string;
   message: string;
-  time: string;
-  status: string; // "Sent" | "Delivered" | "Read"
+  time: string; // UI formatted
+  status: string;
   type: "incoming" | "outgoing";
+  from?: string;
+  to?: string;
+  rawTime?: string; // keep ISO for date grouping
 }
 
 export function useChat(username: string, chatWith: string) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [chat, setChat] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // connect socket + fetch history
   useEffect(() => {
     if (!username) return;
 
@@ -28,14 +33,55 @@ export function useChat(username: string, chatWith: string) {
     setSocket(newSocket);
     newSocket.emit("join", username);
 
+    // load past messages
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch(`/api/messages/${username}/${chatWith}`);
+        const data = await res.json();
+        setChat(
+          data.map((msg: any) => ({
+            ...msg,
+            rawTime: msg.time,
+            time: new Date(msg.time).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            type: msg.from === username ? "outgoing" : "incoming",
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to load messages:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+
     // receive
     newSocket.on("private-message", (msg: Message) => {
-      setChat((prev) => [...prev, { ...msg, type: "incoming" }]);
+      setChat((prev) => [
+        ...prev,
+        {
+          ...msg,
+          rawTime: msg.time,
+          time: new Date(msg.time).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          type: "incoming",
+        },
+      ]);
 
       // mark as seen
+      fetch("/api/messages/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ msgId: msg.id, status: "Read" }),
+      });
+
       newSocket.emit("seen-message", {
         msgId: msg.id,
-        to: msg.alt,
+        to: msg.from,
         from: username,
       });
     });
@@ -43,36 +89,50 @@ export function useChat(username: string, chatWith: string) {
     // update seen
     newSocket.on("message-seen", ({ msgId }) => {
       setChat((prev) =>
-        prev.map((m) =>
-          m.id === msgId ? { ...m, status: "Read" } : m
-        )
+        prev.map((m) => (m.id === msgId ? { ...m, status: "Read" } : m))
       );
     });
 
     return () => {
       newSocket.disconnect();
     };
-  }, [username]);
+  }, [username, chatWith]);
 
+  // send
   const sendMessage = (text: string) => {
     if (socket && text.trim() !== "") {
+      const now = new Date();
       const newMsg: Message = {
         id: uuidv4(),
         alt: username,
         fallback: username.charAt(0).toUpperCase(),
         message: text,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        rawTime: now.toISOString(),
+        time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: "Sent",
         type: "outgoing",
+        from: username,
+        to: chatWith,
       };
 
-      socket.emit("private-message", { ...newMsg, to: chatWith });
+      // show immediately
       setChat((prev) => [...prev, newMsg]);
+
+      // save to DB
+      fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newMsg, time: newMsg.rawTime }),
+      }).catch(() => {
+        setChat((prev) =>
+          prev.map((m) => (m.id === newMsg.id ? { ...m, status: "Failed" } : m))
+        );
+      });
+
+      // emit via socket
+      socket.emit("private-message", { ...newMsg, time: newMsg.rawTime });
     }
   };
 
-
-
-
-  return { chat, sendMessage };
+  return { chat, sendMessage, loading };
 }
