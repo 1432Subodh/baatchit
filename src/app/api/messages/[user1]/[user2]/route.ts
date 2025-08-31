@@ -5,12 +5,13 @@ import { Message } from "../../../../../../model/message";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { user1: string; user2: string } } // Do NOT make this a Promise
+  context: { params: Promise<{ user1: string; user2: string }> }
 ) {
   try {
     await connectDB();
 
-    const { user1, user2 } = params;
+    // Await the promise to get actual params
+    const { user1, user2 } = await context.params;
 
     const messages = await Message.find({
       $or: [
