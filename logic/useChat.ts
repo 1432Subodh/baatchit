@@ -22,18 +22,34 @@ export function useChat(username: string, chatWith: string) {
   const [chat, setChat] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // connect socket + fetch history
   useEffect(() => {
     if (!username) return;
 
-    const newSocket: Socket = io("https://baatchitserver.onrender.com/", {
+    const newSocket: Socket = io("http://13.203.78.173:4000/", {
       transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     setSocket(newSocket);
-    newSocket.emit("join", username);
 
-    // load past messages
+    // When connected/reconnected, always join
+    newSocket.on("connect", () => {
+      console.log("✅ Connected:", newSocket.id);
+      newSocket.emit("join", username);
+    });
+
+    newSocket.on("disconnect", (reason) => {
+      console.warn("⚠️ Disconnected:", reason);
+    });
+
+    newSocket.on("reconnect_attempt", () => {
+      console.log("🔄 Trying to reconnect...");
+    });
+
+    // fetch history
     const fetchHistory = async () => {
       try {
         const res = await fetch(`/api/messages/${username}/${chatWith}`);
@@ -57,7 +73,7 @@ export function useChat(username: string, chatWith: string) {
     };
     fetchHistory();
 
-    // receive
+    // receive private messages
     newSocket.on("private-message", (msg: Message) => {
       setChat((prev) => [
         ...prev,
@@ -98,7 +114,7 @@ export function useChat(username: string, chatWith: string) {
     };
   }, [username, chatWith]);
 
-  // send
+  // send message
   const sendMessage = (text: string) => {
     if (socket && text.trim() !== "") {
       const now = new Date();
@@ -115,10 +131,8 @@ export function useChat(username: string, chatWith: string) {
         to: chatWith,
       };
 
-      // show immediately
       setChat((prev) => [...prev, newMsg]);
 
-      // save to DB
       fetch("/api/messages/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,7 +143,6 @@ export function useChat(username: string, chatWith: string) {
         );
       });
 
-      // emit via socket
       socket.emit("private-message", { ...newMsg, time: newMsg.rawTime });
     }
   };

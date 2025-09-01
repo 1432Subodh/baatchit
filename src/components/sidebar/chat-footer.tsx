@@ -1,6 +1,12 @@
-import { Mic, Paperclip, Smile } from "lucide-react"
+import { Mic, Paperclip, SendHorizonal, Smile } from "lucide-react"
 import React from "react"
 import { Input } from "../ui/input"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { Button } from "../ui/button"
 
 interface Props {
   message: string
@@ -23,13 +29,27 @@ function ChatFooter({ message, setMessage, handleSend }: Props) {
 
   return (
     <footer className="sticky bottom-0 bg-background p-3 flex items-center gap-2 border-t border-border">
-      <button className="text-muted-foreground hover:text-foreground p-2 rounded-full transition">
-        <Smile className="h-5 w-5" />
-      </button>
-
-      <button className="text-muted-foreground hover:text-foreground p-2 rounded-full transition">
+      <Tooltip>
+        <TooltipTrigger><div className="text-muted-foreground hover:text-foreground p-2 rounded-full transition">
         <Paperclip className="h-5 w-5" />
-      </button>
+      </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Document</p>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger><div className="text-muted-foreground hover:text-foreground p-2 rounded-full transition">
+          <Smile className="h-5 w-5" />
+        </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Emoji</p>
+        </TooltipContent>
+      </Tooltip>
+
+
+      
 
       <Input
         type="text"
@@ -40,12 +60,12 @@ function ChatFooter({ message, setMessage, handleSend }: Props) {
         className="flex-1 h-10 px-4 rounded-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
       />
 
-      <button
+      <div
         onClick={handleSend}
-        className="bg-transparent hover:bg-transparent p-2 text-muted-foreground hover:text-foreground transition"
+        className="rounded-full hover:bg-primary/90 bg-primary p-2 text-accent transition"
       >
-        <Mic className="h-5 w-5" />
-      </button>
+        <SendHorizonal className="h-5 w-5" />
+      </div>
     </footer>
   )
 }
